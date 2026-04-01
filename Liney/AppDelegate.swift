@@ -75,6 +75,13 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuItemValidation {
                 Task { @MainActor in
                     self.applicationMenuController.applySettings(settings)
                     self.desktopApplication?.updateHotKeyWindowSettings(settings)
+                    if settings.dynamicIslandEnabled && settings.systemNotificationsEnabled {
+                        if !IslandNotificationState.shared.items.isEmpty {
+                            IslandPanelController.shared.show()
+                        }
+                    } else {
+                        IslandPanelController.shared.hide()
+                    }
                 }
             }
             localizationObserver = NotificationCenter.default.addObserver(
@@ -86,6 +93,9 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuItemValidation {
                 Task { @MainActor in
                     self.refreshMainMenu()
                 }
+            }
+            WorkspaceNotificationCenter.shared.onNotificationTapped = { [weak desktopApplication] workspaceID, worktreePath in
+                desktopApplication?.navigateToWorkspace(id: workspaceID, worktreePath: worktreePath)
             }
             desktopApplication.launch()
             DispatchQueue.main.async { [weak self] in

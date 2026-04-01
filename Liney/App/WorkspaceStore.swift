@@ -2354,11 +2354,28 @@ final class WorkspaceStore: ObservableObject {
             }
         case .gitHubIntegrationStateUpdated:
             gitHubIntegrationState = .disabled
-        case .statusMessage(let text, let tone, let deliverSystemNotification):
+        case .statusMessage(let text, let tone, let deliverSystemNotification, let workspaceID, let worktreePath):
             statusMessageTask?.cancel()
             statusMessage = WorkspaceStatusMessage(text: text, tone: tone)
             if deliverSystemNotification && appSettings.systemNotificationsEnabled {
-                WorkspaceNotificationCenter.shared.deliver(title: "Liney", body: text)
+                if appSettings.dynamicIslandEnabled {
+                    let item = IslandNotificationItem(
+                        id: UUID(),
+                        workspaceID: workspaceID ?? UUID(),
+                        worktreePath: worktreePath,
+                        title: text,
+                        agentName: nil,
+                        terminalTag: nil,
+                        status: tone == .success ? .done : .running,
+                        startedAt: Date(),
+                        body: nil,
+                        prompt: nil
+                    )
+                    IslandNotificationState.shared.post(item: item)
+                    IslandPanelController.shared.show()
+                } else {
+                    WorkspaceNotificationCenter.shared.deliver(title: "Liney", body: text, workspaceID: workspaceID, worktreePath: worktreePath)
+                }
             }
             statusMessageTask = Task { @MainActor in
                 try? await Task.sleep(nanoseconds: 4_000_000_000)

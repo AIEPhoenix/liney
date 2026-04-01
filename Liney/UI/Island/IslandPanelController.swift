@@ -1,0 +1,201 @@
+//
+//  IslandPanelController.swift
+//  Liney
+//
+//  Author: everettjf
+//
+
+import AppKit
+import SwiftUI
+
+@MainActor
+final class IslandPanelController: NSObject, NSWindowDelegate {
+    static let shared = IslandPanelController()
+
+    let state = IslandNotificationState.shared
+
+    private var panel: NSPanel?
+    private var localEventMonitor: Any?
+    private var screenObserver: NSObjectProtocol?
+    private var autoDismissTask: Task<Void, Never>?
+
+    private let collapsedSize = NSSize(width: 320, height: 36)
+    private let expandedWidth: CGFloat = 400
+    private let expandedMaxHeight: CGFloat = 480
+    private let rowHeight: CGFloat = 56
+    private let expandedPadding: CGFloat = 24
+
+    private override init() {
+        super.init()
+        screenObserver = NotificationCenter.default.addObserver(
+            forName: NSApplication.didChangeScreenParametersNotification,
+            object: nil,
+            queue: .main
+        ) { [weak self] _ in
+            guard let self else { return }
+            Task { @MainActor [weak self] in
+                self?.repositionPanel()
+            }
+        }
+    }
+
+    deinit {
+        if let screenObserver {
+            NotificationCenter.default.removeObserver(screenObserver)
+        }
+    }
+
+    func show() {
+        if panel == nil {
+            createPanel()
+        }
+        repositionPanel()
+        panel?.orderFrontRegardless()
+        scheduleAutoDismiss()
+    }
+
+    func hide() {
+        autoDismissTask?.cancel()
+        panel?.orderOut(nil)
+    }
+
+    func toggle() {
+        if panel?.isVisible == true {
+            hide()
+        } else {
+            show()
+        }
+    }
+
+    func navigateToItem(_ item: IslandNotificationItem) {
+        WorkspaceNotificationCenter.shared.onNotificationTapped?(item.workspaceID, item.worktreePath)
+        state.dismiss(id: item.id)
+        if state.items.isEmpty {
+            hide()
+        } else {
+            repositionPanel()
+        }
+    }
+
+    private func createPanel() {
+        let contentView = IslandContentView(state: state, controller: self)
+            .preferredColorScheme(.dark)
+        let hostingController = NSHostingController(rootView: contentView)
+
+        let panel = NSPanel(
+            contentRect: NSRect(origin: .zero, size: collapsedSize),
+            styleMask: [.borderless, .nonactivatingPanel],
+            backing: .buffered,
+            defer: false
+        )
+        panel.level = .floating
+        panel.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary, .stationary]
+        panel.isMovableByWindowBackground = false
+        panel.backgroundColor = .clear
+        panel.isOpaque = false
+        panel.hasShadow = true
+        panel.hidesOnDeactivate = false
+        panel.contentViewController = hostingController
+        panel.delegate = self
+
+        self.panel = panel
+        installEventMonitor()
+    }
+
+    func repositionPanel() {
+        guard let panel else { return }
+
+        let frame = panelFrame(expanded: state.isExpanded)
+        NSAnimationContext.runAnimationGroup { context in
+            context.duration = 0.25
+            context.timingFunction = CAMediaTimingFunction(name: .easeInEaseOut)
+            panel.animator().setFrame(frame, display: true)
+        }
+    }
+
+    private func panelFrame(expanded: Bool) -> NSRect {
+        let screen = NSScreen.main ?? NSScreen.screens.first ?? NSScreen.screens[0]
+        let screenFrame = screen.frame
+
+        let hasNotch: Bool
+        if let _ = screen.auxiliaryTopLeftArea,
+           let _ = screen.auxiliaryTopRightArea {
+            hasNotch = true
+        } else {
+            hasNotch = false
+        }
+
+        let size: NSSize
+        if expanded {
+            let itemCount = CGFloat(max(state.items.count, 1))
+            let contentHeight = min(itemCount * rowHeight + expandedPadding, expandedMaxHeight)
+            size = NSSize(width: expandedWidth, height: contentHeight)
+        } else {
+            size = collapsedSize
+        }
+
+        let x = screenFrame.midX - size.width / 2
+        let y: CGFloat
+        if hasNotch {
+            y = screenFrame.maxY - size.height
+        } else {
+            y = screenFrame.maxY - size.height - 8
+        }
+
+        return NSRect(origin: NSPoint(x: x, y: y), size: size)
+    }
+
+    private func scheduleAutoDismiss() {
+        autoDismissTask?.cancel()
+        autoDismissTask = Task { @MainActor in
+            try? await Task.sleep(nanoseconds: 8_000_000_000)
+            guard !Task.isCancelled else { return }
+            if !state.isExpanded && !state.items.contains(where: { $0.status == .waitingForInput }) {
+                hide()
+            }
+        }
+    }
+
+    private func installEventMonitor() {
+        guard localEventMonitor == nil else { return }
+        localEventMonitor = NSEvent.addLocalMonitorForEvents(matching: .keyDown) { [weak self] event in
+            guard let self,
+                  let panel = self.panel,
+                  panel.isVisible,
+                  event.modifierFlags.contains(.command),
+                  let prompt = self.state.items.first(where: { $0.prompt != nil })?.prompt else {
+                return event
+            }
+
+            let keyNumber: Int?
+            switch event.keyCode {
+            case 18: keyNumber = 1
+            case 19: keyNumber = 2
+            case 20: keyNumber = 3
+            case 21: keyNumber = 4
+            case 23: keyNumber = 5
+            default: keyNumber = nil
+            }
+
+            if let keyNumber, let option = prompt.options.first(where: { $0.id == keyNumber }) {
+                if let item = self.state.items.first(where: { $0.prompt != nil }) {
+                    Task { @MainActor in
+                        _ = option.responseText
+                        self.navigateToItem(item)
+                    }
+                }
+                return nil
+            }
+
+            return event
+        }
+    }
+
+    func windowWillClose(_ notification: Notification) {
+        panel = nil
+        if let localEventMonitor {
+            NSEvent.removeMonitor(localEventMonitor)
+            self.localEventMonitor = nil
+        }
+    }
+}

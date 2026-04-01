@@ -260,6 +260,7 @@ struct AppSettings: Codable, Hashable {
     var autoCheckForUpdates: Bool
     var autoDownloadUpdates: Bool
     var systemNotificationsEnabled: Bool
+    var dynamicIslandEnabled: Bool
     var showArchivedWorkspaces: Bool
     var uiScale: Double
     var terminalFontFamily: String?
@@ -297,6 +298,7 @@ struct AppSettings: Codable, Hashable {
         autoCheckForUpdates: Bool = true,
         autoDownloadUpdates: Bool = false,
         systemNotificationsEnabled: Bool = true,
+        dynamicIslandEnabled: Bool = false,
         showArchivedWorkspaces: Bool = false,
         uiScale: Double = 1,
         terminalFontFamily: String? = nil,
@@ -337,6 +339,7 @@ struct AppSettings: Codable, Hashable {
         self.autoCheckForUpdates = autoCheckForUpdates
         self.autoDownloadUpdates = autoDownloadUpdates
         self.systemNotificationsEnabled = systemNotificationsEnabled
+        self.dynamicIslandEnabled = dynamicIslandEnabled
         self.showArchivedWorkspaces = showArchivedWorkspaces
         self.uiScale = min(max(uiScale, 0.85), 1.5)
         self.terminalFontFamily = terminalFontFamily?
@@ -396,6 +399,7 @@ extension AppSettings {
         case autoCheckForUpdates
         case autoDownloadUpdates
         case systemNotificationsEnabled
+        case dynamicIslandEnabled
         case showArchivedWorkspaces
         case uiScale
         case terminalFontFamily
@@ -444,6 +448,7 @@ extension AppSettings {
             autoCheckForUpdates: try container.decodeIfPresent(Bool.self, forKey: .autoCheckForUpdates) ?? true,
             autoDownloadUpdates: try container.decodeIfPresent(Bool.self, forKey: .autoDownloadUpdates) ?? false,
             systemNotificationsEnabled: try container.decodeIfPresent(Bool.self, forKey: .systemNotificationsEnabled) ?? true,
+            dynamicIslandEnabled: try container.decodeIfPresent(Bool.self, forKey: .dynamicIslandEnabled) ?? false,
             showArchivedWorkspaces: try container.decodeIfPresent(Bool.self, forKey: .showArchivedWorkspaces) ?? false,
             uiScale: try container.decodeIfPresent(Double.self, forKey: .uiScale) ?? 1,
             terminalFontFamily: try container.decodeIfPresent(String.self, forKey: .terminalFontFamily),
