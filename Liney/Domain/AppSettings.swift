@@ -284,6 +284,7 @@ struct AppSettings: Codable, Hashable {
     var sshPresets: [SSHPreset]
     var preferredSSHPresetID: UUID?
     var workspaceGroups: [WorkspaceGroup]
+    var sidebarRootOrder: [SidebarRootItem]
     var keyboardShortcutOverrides: [String: KeyboardShortcutOverride]
 
     init(
@@ -323,6 +324,7 @@ struct AppSettings: Codable, Hashable {
         sshPresets: [SSHPreset] = SSHPreset.builtInPresets,
         preferredSSHPresetID: UUID? = nil,
         workspaceGroups: [WorkspaceGroup] = [],
+        sidebarRootOrder: [SidebarRootItem] = [],
         keyboardShortcutOverrides: [String: KeyboardShortcutOverride] = [:]
     ) {
         let normalizedKeyboardShortcutOverrides = LineyKeyboardShortcuts.normalizedOverrides(keyboardShortcutOverrides)
@@ -385,6 +387,7 @@ struct AppSettings: Codable, Hashable {
             self.preferredSSHPresetID = nil
         }
         self.workspaceGroups = workspaceGroups
+        self.sidebarRootOrder = sidebarRootOrder
     }
 }
 
@@ -426,6 +429,7 @@ extension AppSettings {
         case sshPresets
         case preferredSSHPresetID
         case workspaceGroups
+        case sidebarRootOrder
         case keyboardShortcutOverrides
     }
 
@@ -476,6 +480,7 @@ extension AppSettings {
             sshPresets: try container.decodeIfPresent([SSHPreset].self, forKey: .sshPresets) ?? SSHPreset.builtInPresets,
             preferredSSHPresetID: try container.decodeIfPresent(UUID.self, forKey: .preferredSSHPresetID),
             workspaceGroups: try container.decodeIfPresent([WorkspaceGroup].self, forKey: .workspaceGroups) ?? [],
+            sidebarRootOrder: try container.decodeIfPresent([SidebarRootItem].self, forKey: .sidebarRootOrder) ?? [],
             keyboardShortcutOverrides: try container.decodeIfPresent([String: KeyboardShortcutOverride].self, forKey: .keyboardShortcutOverrides) ?? [:]
         )
     }

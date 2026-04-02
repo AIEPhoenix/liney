@@ -7,6 +7,23 @@
 
 import Foundation
 
+enum SidebarRootItem: Codable, Hashable {
+    case group(UUID)
+    case workspace(UUID)
+
+    var id: UUID {
+        switch self {
+        case .group(let id): return id
+        case .workspace(let id): return id
+        }
+    }
+
+    var isGroup: Bool {
+        if case .group = self { return true }
+        return false
+    }
+}
+
 struct WorkspaceGroup: Codable, Hashable, Identifiable {
     var id: UUID
     var name: String

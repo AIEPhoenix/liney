@@ -1248,6 +1248,24 @@ final class WorkspaceStore: ObservableObject {
         guard !trimmed.isEmpty else { return }
         let group = WorkspaceGroup(name: trimmed, workspaceIDs: workspaceIDs)
         appSettings.workspaceGroups.append(group)
+
+        // Insert group into root order. If workspaces are being grouped, place the group
+        // where the first workspace was; otherwise append at the end.
+        var order = effectiveSidebarRootOrder()
+        let wsSet = Set(workspaceIDs)
+        if let firstIdx = order.firstIndex(where: {
+            if case .workspace(let id) = $0 { return wsSet.contains(id) }
+            return false
+        }) {
+            order.removeAll { item in
+                if case .workspace(let id) = item { return wsSet.contains(id) }
+                return false
+            }
+            order.insert(.group(group.id), at: min(firstIdx, order.count))
+        } else {
+            order.append(.group(group.id))
+        }
+        appSettings.sidebarRootOrder = order
         persistAppSettings()
     }
 
@@ -1260,7 +1278,19 @@ final class WorkspaceStore: ObservableObject {
     }
 
     func removeWorkspaceGroup(_ groupID: UUID) {
-        appSettings.workspaceGroups.removeAll { $0.id == groupID }
+        // Get workspaces from the group before removing, so they appear at the group's position
+        if let groupIndex = appSettings.workspaceGroups.firstIndex(where: { $0.id == groupID }) {
+            let releasedIDs = appSettings.workspaceGroups[groupIndex].workspaceIDs
+            appSettings.workspaceGroups.remove(at: groupIndex)
+            // Replace group entry in root order with its workspaces
+            if let orderIdx = appSettings.sidebarRootOrder.firstIndex(of: .group(groupID)) {
+                appSettings.sidebarRootOrder.remove(at: orderIdx)
+                appSettings.sidebarRootOrder.insert(contentsOf: releasedIDs.map { .workspace($0) }, at: orderIdx)
+            }
+        } else {
+            appSettings.workspaceGroups.removeAll { $0.id == groupID }
+            appSettings.sidebarRootOrder.removeAll { $0 == .group(groupID) }
+        }
         persistAppSettings()
     }
 
@@ -1277,6 +1307,11 @@ final class WorkspaceStore: ObservableObject {
         }
         guard let index = appSettings.workspaceGroups.firstIndex(where: { $0.id == groupID }) else { return }
         appSettings.workspaceGroups[index].workspaceIDs.append(contentsOf: ids)
+        // Remove from root order since they're now inside a group
+        appSettings.sidebarRootOrder.removeAll { item in
+            if case .workspace(let id) = item { return idsToAssign.contains(id) }
+            return false
+        }
         persistAppSettings()
     }
 
@@ -1316,6 +1351,57 @@ final class WorkspaceStore: ObservableObject {
         persistAppSettings()
     }
 
+    /// Returns the effective root ordering, merging `sidebarRootOrder` with any items not yet tracked.
+    func effectiveSidebarRootOrder() -> [SidebarRootItem] {
+        let groupIDs = Set(appSettings.workspaceGroups.map(\.id))
+        let groupedWorkspaceIDs = Set(appSettings.workspaceGroups.flatMap(\.workspaceIDs))
+        let ungroupedWorkspaceIDs = workspaces.map(\.id).filter { !groupedWorkspaceIDs.contains($0) }
+        let ungroupedSet = Set(ungroupedWorkspaceIDs)
+
+        // Filter saved order to only items that still exist
+        var seen = Set<UUID>()
+        var result: [SidebarRootItem] = []
+        for item in appSettings.sidebarRootOrder {
+            guard seen.insert(item.id).inserted else { continue }
+            switch item {
+            case .group(let id):
+                if groupIDs.contains(id) { result.append(item) }
+            case .workspace(let id):
+                if ungroupedSet.contains(id) { result.append(item) }
+            }
+        }
+
+        // Append any new groups not in the saved order
+        for group in appSettings.workspaceGroups where !seen.contains(group.id) {
+            result.append(.group(group.id))
+        }
+        // Append any new ungrouped workspaces not in the saved order
+        for wsID in ungroupedWorkspaceIDs where !seen.contains(wsID) {
+            result.append(.workspace(wsID))
+        }
+
+        return result
+    }
+
+    func moveSidebarRootItem(_ item: SidebarRootItem, toIndex destinationIndex: Int) {
+        moveSidebarRootItems([item], toIndex: destinationIndex)
+    }
+
+    func moveSidebarRootItems(_ items: [SidebarRootItem], toIndex destinationIndex: Int) {
+        var order = effectiveSidebarRootOrder()
+        let movingSet = Set(items)
+        // Find the first source index for adjustment
+        let firstSourceIndex = order.firstIndex(where: { movingSet.contains($0) }) ?? 0
+        let moving = order.filter { movingSet.contains($0) }
+        guard !moving.isEmpty else { return }
+        order.removeAll { movingSet.contains($0) }
+        let adjusted = destinationIndex > firstSourceIndex ? destinationIndex - moving.count : destinationIndex
+        let clamped = min(max(adjusted, 0), order.count)
+        order.insert(contentsOf: moving, at: clamped)
+        appSettings.sidebarRootOrder = order
+        persistAppSettings()
+    }
+
     func refreshWorkspacesInGroup(_ groupID: UUID) {
         guard let group = appSettings.workspaceGroups.first(where: { $0.id == groupID }) else { return }
         refreshWorkspaces(ids: group.workspaceIDs)
@@ -1347,6 +1433,11 @@ final class WorkspaceStore: ObservableObject {
         guard let index = appSettings.workspaceGroups.firstIndex(where: { $0.id == groupID }) else { return }
         let clamped = min(max(atIndex, 0), appSettings.workspaceGroups[index].workspaceIDs.count)
         appSettings.workspaceGroups[index].workspaceIDs.insert(contentsOf: ids, at: clamped)
+        // Remove from root order since they're now inside a group
+        appSettings.sidebarRootOrder.removeAll { item in
+            if case .workspace(let id) = item { return idsToMove.contains(id) }
+            return false
+        }
         persistAppSettings()
     }
 

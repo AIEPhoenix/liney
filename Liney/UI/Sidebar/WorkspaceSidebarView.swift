@@ -237,27 +237,31 @@ private final class WorkspaceSidebarCoordinator: NSObject, NSOutlineViewDataSour
     }
 
         private func buildNodes(from workspaces: [WorkspaceModel]) -> [SidebarNodeItem] {
-            let groups = store?.appSettings.workspaceGroups ?? []
-            let groupedWorkspaceIDs = Set(groups.flatMap(\.workspaceIDs))
+            let groupsByID = Dictionary(
+                uniqueKeysWithValues: (store?.appSettings.workspaceGroups ?? []).map { ($0.id, $0) }
+            )
             let workspaceByID = Dictionary(uniqueKeysWithValues: workspaces.map { ($0.id, $0) })
+            let rootOrder = store?.effectiveSidebarRootOrder() ?? []
 
             var result: [SidebarNodeItem] = []
 
-            for group in groups {
-                let groupWorkspaceNodes = group.workspaceIDs.compactMap { id -> SidebarNodeItem? in
-                    guard let workspace = workspaceByID[id] else { return nil }
-                    return makeWorkspaceNode(workspace)
-                }
-
-                let matchesQuery = currentQuery.isEmpty || group.name.lowercased().contains(currentQuery)
-                if matchesQuery || !groupWorkspaceNodes.isEmpty {
-                    result.append(.group(group: group, children: groupWorkspaceNodes))
-                }
-            }
-
-            for workspace in workspaces where !groupedWorkspaceIDs.contains(workspace.id) {
-                if let node = makeWorkspaceNode(workspace) {
-                    result.append(node)
+            for rootItem in rootOrder {
+                switch rootItem {
+                case .group(let groupID):
+                    guard let group = groupsByID[groupID] else { continue }
+                    let groupWorkspaceNodes = group.workspaceIDs.compactMap { id -> SidebarNodeItem? in
+                        guard let workspace = workspaceByID[id] else { return nil }
+                        return makeWorkspaceNode(workspace)
+                    }
+                    let matchesQuery = currentQuery.isEmpty || group.name.lowercased().contains(currentQuery)
+                    if matchesQuery || !groupWorkspaceNodes.isEmpty {
+                        result.append(.group(group: group, children: groupWorkspaceNodes))
+                    }
+                case .workspace(let wsID):
+                    guard let workspace = workspaceByID[wsID] else { continue }
+                    if let node = makeWorkspaceNode(workspace) {
+                        result.append(node)
+                    }
                 }
             }
 
@@ -1236,8 +1240,9 @@ private final class WorkspaceSidebarCoordinator: NSObject, NSOutlineViewDataSour
             if let groupIDString = info.draggingPasteboard.string(forType: Self.groupDragType),
                let groupID = UUID(uuidString: groupIDString) {
                 guard item == nil else { return false }
-                let targetIndex = index == -1 ? (store?.appSettings.workspaceGroups.count ?? 0) : index
-                store?.moveWorkspaceGroup(groupID, toIndex: targetIndex)
+                let rootOrder = store?.effectiveSidebarRootOrder() ?? []
+                let targetIndex = index == -1 ? rootOrder.count : index
+                store?.moveSidebarRootItem(.group(groupID), toIndex: targetIndex)
                 return true
             }
 
@@ -1255,8 +1260,11 @@ private final class WorkspaceSidebarCoordinator: NSObject, NSOutlineViewDataSour
                 return true
             }
 
+            // Moving workspace(s) to root level
             store?.removeWorkspacesFromAllGroups(ids: ids)
-            store?.moveWorkspaces(withIDs: ids, toRootIndex: index == -1 ? rootNodes.count : index)
+            let rootOrder = store?.effectiveSidebarRootOrder() ?? []
+            let targetIndex = index == -1 ? rootOrder.count : index
+            store?.moveSidebarRootItems(ids.map { .workspace($0) }, toIndex: targetIndex)
             return true
         }
 }
