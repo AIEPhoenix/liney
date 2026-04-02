@@ -810,6 +810,7 @@ final class WorkspaceStore: ObservableObject {
             autoCheckForUpdates: settings.autoCheckForUpdates,
             autoDownloadUpdates: settings.autoDownloadUpdates,
             systemNotificationsEnabled: settings.systemNotificationsEnabled,
+            dynamicIslandEnabled: settings.dynamicIslandEnabled,
             showArchivedWorkspaces: settings.showArchivedWorkspaces,
             uiScale: settings.uiScale,
             terminalFontFamily: settings.terminalFontFamily,
