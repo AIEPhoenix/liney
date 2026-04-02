@@ -2449,33 +2449,34 @@ final class WorkspaceStore: ObservableObject {
             gitHubIntegrationState = .disabled
         case .statusMessage(let text, let tone, let deliverSystemNotification, let workspaceID, let worktreePath):
             statusMessageTask?.cancel()
-            statusMessage = WorkspaceStatusMessage(text: text, tone: tone)
-            if deliverSystemNotification {
-                if appSettings.systemNotificationsEnabled {
+            if deliverSystemNotification && appSettings.dynamicIslandEnabled {
+                // Dynamic Island takes priority — skip toast and system notification
+                let item = IslandNotificationItem(
+                    id: UUID(),
+                    workspaceID: workspaceID ?? UUID(),
+                    worktreePath: worktreePath,
+                    title: text,
+                    agentName: nil,
+                    terminalTag: nil,
+                    status: tone == .success ? .done : .running,
+                    startedAt: Date(),
+                    body: nil,
+                    prompt: nil
+                )
+                IslandNotificationState.shared.post(item: item)
+                IslandPanelController.shared.show()
+            } else {
+                // No Island — show toast, and optionally system notification
+                statusMessage = WorkspaceStatusMessage(text: text, tone: tone)
+                statusMessageTask = Task { @MainActor in
+                    try? await Task.sleep(nanoseconds: 4_000_000_000)
+                    guard !Task.isCancelled else { return }
+                    if self.statusMessage?.text == text {
+                        self.statusMessage = nil
+                    }
+                }
+                if deliverSystemNotification && appSettings.systemNotificationsEnabled {
                     WorkspaceNotificationCenter.shared.deliver(title: "Liney", body: text, workspaceID: workspaceID, worktreePath: worktreePath)
-                }
-                if appSettings.dynamicIslandEnabled {
-                    let item = IslandNotificationItem(
-                        id: UUID(),
-                        workspaceID: workspaceID ?? UUID(),
-                        worktreePath: worktreePath,
-                        title: text,
-                        agentName: nil,
-                        terminalTag: nil,
-                        status: tone == .success ? .done : .running,
-                        startedAt: Date(),
-                        body: nil,
-                        prompt: nil
-                    )
-                    IslandNotificationState.shared.post(item: item)
-                    IslandPanelController.shared.show()
-                }
-            }
-            statusMessageTask = Task { @MainActor in
-                try? await Task.sleep(nanoseconds: 4_000_000_000)
-                guard !Task.isCancelled else { return }
-                if self.statusMessage?.text == text {
-                    self.statusMessage = nil
                 }
             }
         }

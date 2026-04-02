@@ -183,10 +183,28 @@ final class LineyGhosttyController: ManagedTerminalSessionSurfaceController {
             return true
 
         case GHOSTTY_ACTION_DESKTOP_NOTIFICATION:
-            LineyGhosttyNotificationCenter.shared.deliver(
-                title: action.action.desktop_notification.title.map(String.init(cString:)) ?? "Terminal",
-                body: action.action.desktop_notification.body.map(String.init(cString:))
-            )
+            let title = action.action.desktop_notification.title.map(String.init(cString:)) ?? "Terminal"
+            let body = action.action.desktop_notification.body.map(String.init(cString:))
+            let islandEnabled = IslandPanelController.shared.workspaceStore?.appSettings.dynamicIslandEnabled == true
+            if islandEnabled {
+                // Dynamic Island takes priority — skip system notification
+                let item = IslandNotificationItem(
+                    id: UUID(),
+                    workspaceID: UUID(),
+                    worktreePath: nil,
+                    title: body ?? title,
+                    agentName: nil,
+                    terminalTag: nil,
+                    status: .running,
+                    startedAt: Date(),
+                    body: nil,
+                    prompt: nil
+                )
+                IslandNotificationState.shared.post(item: item)
+                IslandPanelController.shared.show()
+            } else {
+                LineyGhosttyNotificationCenter.shared.deliver(title: title, body: body)
+            }
             return true
 
         case GHOSTTY_ACTION_RING_BELL:
