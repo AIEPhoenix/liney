@@ -75,10 +75,9 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuItemValidation {
                 Task { @MainActor in
                     self.applicationMenuController.applySettings(settings)
                     self.desktopApplication?.updateHotKeyWindowSettings(settings)
-                    if settings.dynamicIslandEnabled && settings.systemNotificationsEnabled {
-                        if !IslandNotificationState.shared.items.isEmpty {
-                            IslandPanelController.shared.show()
-                        }
+                    if settings.dynamicIslandEnabled {
+                        IslandPanelController.shared.workspaceStore = self.desktopApplication?.activeWorkspaceStore
+                        IslandPanelController.shared.show()
                     } else {
                         IslandPanelController.shared.hide()
                     }
@@ -97,11 +96,16 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuItemValidation {
             WorkspaceNotificationCenter.shared.onNotificationTapped = { [weak desktopApplication] workspaceID, worktreePath in
                 desktopApplication?.navigateToWorkspace(id: workspaceID, worktreePath: worktreePath)
             }
-            IslandPanelController.shared.workspaceStore = desktopApplication.activeWorkspaceStore
             desktopApplication.launch()
             DispatchQueue.main.async { [weak self] in
                 guard let self else { return }
                 self.refreshMainMenu()
+                if let store = self.desktopApplication?.activeWorkspaceStore {
+                    IslandPanelController.shared.workspaceStore = store
+                    if store.appSettings.dynamicIslandEnabled {
+                        IslandPanelController.shared.show()
+                    }
+                }
             }
         }
     }
