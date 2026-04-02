@@ -162,7 +162,7 @@ final class IslandPanelController: NSObject, NSWindowDelegate {
 
         // Center horizontally and push top edge above screen so the rounded corners
         // blend into the top edge, similar to a real Dynamic Island.
-        let topOverlap: CGFloat = expanded ? 0 : 10
+        let topOverlap: CGFloat = expanded ? 0 : 4
         let x = screenFrame.midX - size.width / 2
         let y = screenFrame.maxY - size.height + topOverlap
 
