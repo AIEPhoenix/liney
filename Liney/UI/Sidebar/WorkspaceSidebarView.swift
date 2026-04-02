@@ -535,6 +535,35 @@ private final class WorkspaceSidebarCoordinator: NSObject, NSOutlineViewDataSour
         private func makeWorkspaceMenu(workspace: WorkspaceModel) -> NSMenu {
             let menu = NSMenu()
 
+            // Dynamic actions at the top for quick access
+            let hasRunScript = !workspace.runScript.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+            let hasWorkflows = !workspace.workflows.isEmpty
+            if hasRunScript || hasWorkflows {
+                if hasRunScript {
+                    addMenuItem(
+                        to: menu,
+                        title: localized("sidebar.menu.runWorkspaceScript"),
+                        action: #selector(runWorkspaceScript(_:)),
+                        representedObject: workspace.id
+                    )
+                }
+                if hasWorkflows {
+                    let workflowsItem = NSMenuItem(title: localized("sidebar.menu.runWorkflow"), action: nil, keyEquivalent: "")
+                    let workflowsMenu = NSMenu()
+                    for workflow in workspace.workflows {
+                        addMenuItem(
+                            to: workflowsMenu,
+                            title: workflow.name,
+                            action: #selector(runWorkflow(_:)),
+                            representedObject: SidebarActionWorkflow(workspaceID: workspace.id, workflowID: workflow.id)
+                        )
+                    }
+                    menu.setSubmenu(workflowsMenu, for: workflowsItem)
+                    menu.addItem(workflowsItem)
+                }
+                menu.addItem(.separator())
+            }
+
             if workspace.supportsRepositoryFeatures {
                 addMenuItem(
                     to: menu,
@@ -619,28 +648,6 @@ private final class WorkspaceSidebarCoordinator: NSObject, NSOutlineViewDataSour
                 action: #selector(toggleArchivedWorkspace(_:)),
                 representedObject: workspace.id
             )
-                if !workspace.runScript.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
-                    addMenuItem(
-                        to: menu,
-                        title: localized("sidebar.menu.runWorkspaceScript"),
-                        action: #selector(runWorkspaceScript(_:)),
-                        representedObject: workspace.id
-                    )
-                }
-            if !workspace.workflows.isEmpty {
-                let workflowsItem = NSMenuItem(title: localized("sidebar.menu.runWorkflow"), action: nil, keyEquivalent: "")
-                let workflowsMenu = NSMenu()
-                for workflow in workspace.workflows {
-                    addMenuItem(
-                        to: workflowsMenu,
-                        title: workflow.name,
-                        action: #selector(runWorkflow(_:)),
-                        representedObject: SidebarActionWorkflow(workspaceID: workspace.id, workflowID: workflow.id)
-                    )
-                }
-                menu.setSubmenu(workflowsMenu, for: workflowsItem)
-                menu.addItem(workflowsItem)
-            }
             addMenuItem(
                 to: menu,
                 title: localized("sidebar.menu.workspaceSettings"),
