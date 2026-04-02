@@ -17,12 +17,14 @@ final class IslandPanelController: NSObject, NSWindowDelegate {
 
     private var panel: NSPanel?
     private var localEventMonitor: Any?
+    private var mouseEventMonitor: Any?
     private var screenObserver: NSObjectProtocol?
     private var autoDismissTask: Task<Void, Never>?
+    private var collapseTask: Task<Void, Never>?
 
-    private let collapsedSize = NSSize(width: 340, height: 38)
-    private let expandedWidth: CGFloat = 480
-    private let expandedMaxHeight: CGFloat = 520
+    private let collapsedSize = NSSize(width: 180, height: 32)
+    private let expandedWidth: CGFloat = 280
+    private let expandedMaxHeight: CGFloat = 420
 
     private override init() {
         super.init()
@@ -113,6 +115,7 @@ final class IslandPanelController: NSObject, NSWindowDelegate {
 
         self.panel = panel
         installEventMonitor()
+        installMouseTracking()
     }
 
     func repositionPanel() {
@@ -171,6 +174,30 @@ final class IslandPanelController: NSObject, NSWindowDelegate {
         }
     }
 
+    private func installMouseTracking() {
+        mouseEventMonitor = NSEvent.addGlobalMonitorForEvents(matching: [.mouseMoved, .leftMouseDown]) { [weak self] event in
+            Task { @MainActor [weak self] in
+                guard let self, let panel = self.panel, panel.isVisible else { return }
+                let mouseLocation = NSEvent.mouseLocation
+                let panelFrame = panel.frame
+                let expandedHitArea = panelFrame.insetBy(dx: -20, dy: -20)
+
+                if expandedHitArea.contains(mouseLocation) {
+                    self.collapseTask?.cancel()
+                } else if self.state.isExpanded {
+                    self.collapseTask?.cancel()
+                    self.collapseTask = Task { @MainActor in
+                        try? await Task.sleep(nanoseconds: 600_000_000)
+                        guard !Task.isCancelled else { return }
+                        self.state.isExpanded = false
+                        self.state.currentGroupID = nil
+                        self.repositionPanel()
+                    }
+                }
+            }
+        }
+    }
+
     private func installEventMonitor() {
         guard localEventMonitor == nil else { return }
         localEventMonitor = NSEvent.addLocalMonitorForEvents(matching: .keyDown) { [weak self] event in
@@ -211,6 +238,10 @@ final class IslandPanelController: NSObject, NSWindowDelegate {
         if let localEventMonitor {
             NSEvent.removeMonitor(localEventMonitor)
             self.localEventMonitor = nil
+        }
+        if let mouseEventMonitor {
+            NSEvent.removeMonitor(mouseEventMonitor)
+            self.mouseEventMonitor = nil
         }
     }
 }

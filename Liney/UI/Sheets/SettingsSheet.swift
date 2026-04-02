@@ -622,13 +622,23 @@ struct SettingsSheet: View {
 
     private var dynamicIslandSettingsView: some View {
         VStack(alignment: .leading, spacing: 18) {
-            GroupBox(localized("settings.dynamicIsland.enable.group")) {
+            GroupBox {
                 VStack(alignment: .leading, spacing: 12) {
-                    Toggle(localized("settings.dynamicIsland.enable.toggle"), isOn: $appSettings.dynamicIslandEnabled)
+                    HStack(spacing: 8) {
+                        Toggle(localized("settings.dynamicIsland.enable.toggle"), isOn: $appSettings.dynamicIslandEnabled)
+                        Text("Beta")
+                            .font(.system(size: 10, weight: .semibold, design: .rounded))
+                            .foregroundStyle(.white)
+                            .padding(.horizontal, 6)
+                            .padding(.vertical, 2)
+                            .background(RoundedRectangle(cornerRadius: 4).fill(.orange))
+                    }
                     Text(localized("settings.dynamicIsland.enable.description"))
                         .font(.callout)
                         .foregroundStyle(.secondary)
                 }
+            } label: {
+                Text(localized("settings.dynamicIsland.enable.group"))
             }
         }
     }

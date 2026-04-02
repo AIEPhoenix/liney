@@ -30,8 +30,7 @@ struct IslandExpandedView: View {
         }
         .background(
             RoundedRectangle(cornerRadius: 20)
-                .fill(.ultraThinMaterial)
-                .environment(\.colorScheme, .dark)
+                .fill(Color(red: 0.08, green: 0.08, blue: 0.09))
         )
         .overlay(
             RoundedRectangle(cornerRadius: 20)
