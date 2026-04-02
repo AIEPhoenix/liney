@@ -23,8 +23,8 @@ final class IslandPanelController: NSObject, NSWindowDelegate {
     private var collapseTask: Task<Void, Never>?
 
     private let collapsedSize = NSSize(width: 180, height: 32)
-    private let expandedWidth: CGFloat = 280
-    private let expandedMaxHeight: CGFloat = 420
+    private let expandedWidth: CGFloat = 360
+    private let expandedMaxHeight: CGFloat = 500
 
     private override init() {
         super.init()
@@ -133,32 +133,16 @@ final class IslandPanelController: NSObject, NSWindowDelegate {
         let screen = NSScreen.main ?? NSScreen.screens.first ?? NSScreen.screens[0]
         let screenFrame = screen.frame
 
-        let hasNotch: Bool
-        if let _ = screen.auxiliaryTopLeftArea,
-           let _ = screen.auxiliaryTopRightArea {
-            hasNotch = true
-        } else {
-            hasNotch = false
-        }
-
         let size: NSSize
         if expanded {
-            let contentHeight: CGFloat = expandedMaxHeight
-            size = NSSize(width: expandedWidth, height: contentHeight)
+            size = NSSize(width: expandedWidth, height: expandedMaxHeight)
         } else {
             size = collapsedSize
         }
 
+        // Always center horizontally and pin to the very top of the screen
         let x = screenFrame.midX - size.width / 2
-        let menuBarHeight: CGFloat = screenFrame.maxY - screen.visibleFrame.maxY
-        let y: CGFloat
-        if hasNotch {
-            // Position flush with top of screen, overlapping the notch area
-            y = screenFrame.maxY - size.height
-        } else {
-            // Position just below menu bar
-            y = screenFrame.maxY - menuBarHeight - size.height - 4
-        }
+        let y = screenFrame.maxY - size.height
 
         return NSRect(origin: NSPoint(x: x, y: y), size: size)
     }
