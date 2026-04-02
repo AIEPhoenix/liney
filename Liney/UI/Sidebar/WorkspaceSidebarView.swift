@@ -205,6 +205,8 @@ private final class WorkspaceSidebarCoordinator: NSObject, NSOutlineViewDataSour
                 "\(g.id)|\(g.name)|\(g.icon.symbolName)|\(g.icon.palette.rawValue)|\(g.isExpanded)|\(g.workspaceIDs.map(\.uuidString).joined(separator: ","))"
             }.joined(separator: ";")
             parts.append("groups:\(groupFingerprint)")
+            let rootOrderFingerprint = settings.sidebarRootOrder.map { "\($0)" }.joined(separator: ",")
+            parts.append("rootOrder:\(rootOrderFingerprint)")
             parts.append(
                 [
                     settings.sidebarShowsSecondaryLabels.description,
