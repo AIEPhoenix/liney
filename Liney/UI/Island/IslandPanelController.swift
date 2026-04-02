@@ -22,6 +22,7 @@ final class IslandPanelController: NSObject, NSWindowDelegate {
     private var screenObserver: NSObjectProtocol?
     private var autoDismissTask: Task<Void, Never>?
     private var collapseTask: Task<Void, Never>?
+    private var expandTask: Task<Void, Never>?
 
     private let collapsedSize = NSSize(width: 180, height: 32)
     private let expandedWidth: CGFloat = 360
@@ -175,28 +176,41 @@ final class IslandPanelController: NSObject, NSWindowDelegate {
     }
 
     private func checkMousePosition() {
-        guard let panel, panel.isVisible, state.isExpanded else {
+        guard let panel, panel.isVisible else {
             collapseTask?.cancel()
+            expandTask?.cancel()
             return
         }
         let mouseLocation = NSEvent.mouseLocation
-        let hitArea = panel.frame.insetBy(dx: -20, dy: -20)
+        let panelFrame = panel.frame
+        let hitArea = panelFrame.insetBy(dx: -20, dy: -20)
+        let isInside = hitArea.contains(mouseLocation)
 
-        if hitArea.contains(mouseLocation) {
+        if isInside {
+            // Mouse entered — cancel any pending collapse, schedule expand
             collapseTask?.cancel()
+            collapseTask = nil
+            if !state.isExpanded && expandTask == nil {
+                expandTask = Task { @MainActor in
+                    try? await Task.sleep(nanoseconds: 300_000_000)
+                    guard !Task.isCancelled else { return }
+                    self.state.isExpanded = true
+                    self.repositionPanel()
+                    self.expandTask = nil
+                }
+            }
         } else {
-            guard collapseTask == nil else { return }
-            collapseTask = Task { @MainActor in
-                try? await Task.sleep(nanoseconds: 600_000_000)
-                guard !Task.isCancelled else { return }
-                self.state.isExpanded = false
-                self.state.currentGroupID = nil
-                self.repositionPanel()
-                self.collapseTask = nil
-
-                // If not persistent, also hide the whole panel
-                if let store = self.workspaceStore, !store.appSettings.dynamicIslandPersistent {
-                    self.scheduleAutoDismiss()
+            // Mouse left — cancel any pending expand, schedule collapse
+            expandTask?.cancel()
+            expandTask = nil
+            if state.isExpanded && collapseTask == nil {
+                collapseTask = Task { @MainActor in
+                    try? await Task.sleep(nanoseconds: 600_000_000)
+                    guard !Task.isCancelled else { return }
+                    self.state.isExpanded = false
+                    self.state.currentGroupID = nil
+                    self.repositionPanel()
+                    self.collapseTask = nil
                 }
             }
         }
