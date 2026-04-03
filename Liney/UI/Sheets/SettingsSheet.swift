@@ -657,30 +657,6 @@ struct SettingsSheet: View {
                     }
                     .pickerStyle(.menu)
 
-                    VStack(alignment: .leading, spacing: 8) {
-                        Text("Preview")
-                            .font(.callout)
-                            .foregroundStyle(.secondary)
-
-                        let collapsedW = appSettings.dynamicIslandWidth.collapsedMaxWidth
-                        let collapsedH = appSettings.dynamicIslandHeight.collapsedHeight
-
-                        RoundedRectangle(cornerRadius: collapsedH / 2, style: .continuous)
-                            .fill(Color.white.opacity(0.1))
-                            .frame(width: collapsedW, height: collapsedH)
-                            .overlay {
-                                Text("LINEY")
-                                    .font(.system(size: 11, weight: .semibold, design: .monospaced))
-                                    .foregroundStyle(.secondary)
-                            }
-                    }
-                }
-            } label: {
-                Text(localized("settings.dynamicIsland.size.group"))
-            }
-
-            GroupBox {
-                VStack(alignment: .leading, spacing: 14) {
                     Picker("Pixel Animation", selection: $appSettings.dynamicIslandPixelAnimation) {
                         ForEach(IslandPixelAnimationStyle.allCases, id: \.self) { style in
                             Label(style.displayName, systemImage: style.iconName)
@@ -689,19 +665,18 @@ struct SettingsSheet: View {
                     }
                     .pickerStyle(.menu)
 
-                    // Preview
                     VStack(alignment: .leading, spacing: 8) {
                         Text("Preview")
                             .font(.callout)
                             .foregroundStyle(.secondary)
 
                         IslandPixelAnimationPreview(style: appSettings.dynamicIslandPixelAnimation)
-                            .frame(width: 280)
+                            .frame(width: appSettings.dynamicIslandWidth.collapsedMaxWidth, height: appSettings.dynamicIslandHeight.collapsedHeight)
                             .id(appSettings.dynamicIslandPixelAnimation)
                     }
                 }
             } label: {
-                Text("Pixel Animation")
+                Text(localized("settings.dynamicIsland.size.group"))
             }
         }
     }
