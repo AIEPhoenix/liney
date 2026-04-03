@@ -1072,16 +1072,6 @@ struct SettingsSheet: View {
                                 .background(LineyTheme.subtleFill, in: RoundedRectangle(cornerRadius: 10, style: .continuous))
                             }
 
-                            if !workspaceSettings.workflows.isEmpty {
-                                Picker(localized("settings.workspace.workflow.preferred"), selection: Binding(
-                                    get: { workspaceSettings.preferredWorkflowID ?? workspaceSettings.workflows.first?.id },
-                                    set: { workspaceSettings.preferredWorkflowID = $0 }
-                                )) {
-                                    ForEach(workspaceSettings.workflows) { workflow in
-                                        Text(workflow.name).tag(Optional(workflow.id))
-                                    }
-                                }
-                            }
                         }
                 } else {
                     Text(localized("settings.workspace.emptyState"))
