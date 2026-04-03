@@ -256,23 +256,13 @@ nonisolated enum IslandWidthPreset: String, Codable, Hashable, CaseIterable, Ide
 
     var id: String { rawValue }
 
-    var expandedWidth: CGFloat {
-        switch self {
-        case .compact:   return 360
-        case .standard:  return 420
-        case .wide:      return 500
-        case .extraWide: return 600
-        case .full:      return 720
-        }
-    }
-
     var collapsedMaxWidth: CGFloat {
         switch self {
-        case .compact:   return 320
-        case .standard:  return 380
-        case .wide:      return 460
-        case .extraWide: return 560
-        case .full:      return 680
+        case .compact:   return 200
+        case .standard:  return 280
+        case .wide:      return 360
+        case .extraWide: return 440
+        case .full:      return 520
         }
     }
 
@@ -294,11 +284,11 @@ nonisolated enum IslandHeightPreset: String, Codable, Hashable, CaseIterable, Id
 
     var id: String { rawValue }
 
-    var expandedMaxHeight: CGFloat {
+    var collapsedHeight: CGFloat {
         switch self {
-        case .compact:  return 400
-        case .standard: return 500
-        case .tall:     return 640
+        case .compact:  return 32
+        case .standard: return 38
+        case .tall:     return 44
         }
     }
 

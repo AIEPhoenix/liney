@@ -61,9 +61,10 @@ final class IslandPanelController: NSObject, NSWindowDelegate {
 
     private var hasNotch: Bool { notchSize.height > 0 }
 
-    /// Collapsed height: match notch height when present, otherwise 32pt.
+    /// Collapsed height from preset, or match notch height when present.
     private var collapsedHeight: CGFloat {
-        hasNotch ? max(notchSize.height, 32) : 32
+        let presetHeight = heightPreset.collapsedHeight
+        return hasNotch ? max(notchSize.height, presetHeight) : presetHeight
     }
 
     /// Minimum width that covers the notch with some padding.
@@ -71,13 +72,12 @@ final class IslandPanelController: NSObject, NSWindowDelegate {
         hasNotch ? notchSize.width + 40 : 0
     }
 
+    private let expandedWidth: CGFloat = 400
+    private let expandedMaxHeight: CGFloat = 500
+
     private var collapsedMaxWidth: CGFloat {
         max(widthPreset.collapsedMaxWidth, notchAwareMinWidth)
     }
-    private var expandedWidth: CGFloat {
-        max(widthPreset.expandedWidth, notchAwareMinWidth)
-    }
-    private var expandedMaxHeight: CGFloat { heightPreset.expandedMaxHeight }
 
     private override init() {
         super.init()
