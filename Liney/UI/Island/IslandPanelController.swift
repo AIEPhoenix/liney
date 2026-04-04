@@ -249,8 +249,7 @@ final class IslandPanelController: NSObject, NSWindowDelegate {
         }
         let mouseLocation = NSEvent.mouseLocation
         let panelFrame = panel.frame
-        let hitArea = panelFrame.insetBy(dx: -20, dy: -20)
-        let isInside = hitArea.contains(mouseLocation)
+        let isInside = panelFrame.contains(mouseLocation)
 
         if isInside {
             // Mouse entered — cancel any pending collapse, schedule expand

@@ -91,16 +91,53 @@ struct WorkflowEditorSheet: View {
 
     // MARK: - Sidebar
 
+    private static let presetWorkflows: [(name: String, commands: [(name: String, command: String)])] = [
+        (
+            name: "HAPI Relay",
+            commands: [
+                (name: "Hub", command: "hapi hub --relay"),
+                (name: "HAPI", command: "hapi"),
+            ]
+        ),
+        (
+            name: "HAPI Tunnel",
+            commands: [
+                (name: "Hub", command: "hapi hub"),
+                (name: "HAPI", command: "hapi"),
+                (name: "Tunnel", command: "cloudflared tunnel run"),
+            ]
+        ),
+    ]
+
     private var sidebar: some View {
         VStack(alignment: .leading, spacing: 12) {
-            Button {
-                guard let workspace else { return }
-                let newWorkflow = WorkspaceWorkflow(name: localized("defaults.workflow.name"))
-                workspace.settings.workflows.append(newWorkflow)
-                selectedWorkflowID = newWorkflow.id
-            } label: {
-                Label(localized("sheet.workflowEditor.addWorkflow"), systemImage: "plus")
-                    .font(.system(size: 12, weight: .medium))
+            HStack(spacing: 8) {
+                Button {
+                    guard let workspace else { return }
+                    let newWorkflow = WorkspaceWorkflow(name: localized("defaults.workflow.name"))
+                    workspace.settings.workflows.append(newWorkflow)
+                    selectedWorkflowID = newWorkflow.id
+                } label: {
+                    Label(localized("sheet.workflowEditor.addWorkflow"), systemImage: "plus")
+                        .font(.system(size: 12, weight: .medium))
+                }
+
+                Menu {
+                    ForEach(Self.presetWorkflows, id: \.name) { preset in
+                        Button(preset.name) {
+                            guard let workspace else { return }
+                            let commands = preset.commands.map {
+                                WorkspaceWorkflowBatchCommand(name: $0.name, command: $0.command)
+                            }
+                            let workflow = WorkspaceWorkflow(name: preset.name, commands: commands)
+                            workspace.settings.workflows.append(workflow)
+                            selectedWorkflowID = workflow.id
+                        }
+                    }
+                } label: {
+                    Label(localized("sheet.workflowEditor.presets"), systemImage: "square.and.arrow.down")
+                        .font(.system(size: 12, weight: .medium))
+                }
             }
 
             if let workspace {
