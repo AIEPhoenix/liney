@@ -291,10 +291,6 @@ struct MainWindowView: View {
                     }
                     )
 
-                    if let hapiInstallation = availableHAPIInstallation {
-                        hapiToolbarControl(using: hapiInstallation)
-                    }
-
                     ToolbarSegmentedControl(
                         backgroundColor: sleepPreventionSplitButtonBackground,
                         borderColor: sleepPreventionSplitButtonBorder,
@@ -322,6 +318,10 @@ struct MainWindowView: View {
                                 .foregroundStyle(LineyTheme.secondaryText)
                         }
                     )
+
+                    if let hapiInstallation = availableHAPIInstallation {
+                        hapiToolbarControl(using: hapiInstallation)
+                    }
                 }
                 .scaleEffect(uiScale)
                 Button {
