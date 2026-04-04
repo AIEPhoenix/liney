@@ -998,14 +998,14 @@ private final class LineyGhosttySurfaceView: NSView {
             return true
         }
 
-        if hasMarkedText(),
-           !event.modifierFlags.intersection(.deviceIndependentFlagsMask).contains(.command) {
-            return false
-        }
-
         if shouldPreferRawKeyEvent(for: event) {
             keyDown(with: event)
             return true
+        }
+
+        if hasMarkedText(),
+           !event.modifierFlags.intersection(.deviceIndependentFlagsMask).contains(.command) {
+            return false
         }
 
         let flags = bindingFlags(for: event, on: surface)
