@@ -885,12 +885,9 @@ private final class LineyGhosttySurfaceView: NSView {
             return
         }
 
-        if let escapeSequence = lineyGhosttyOptionDeleteEscapeSequence(
-            keyCode: event.keyCode,
-            modifierFlags: event.modifierFlags
-        ) {
+        if lineyGhosttyOptionDeleteEscapeSequence(keyCode: event.keyCode, modifierFlags: event.modifierFlags) != nil {
             logArrowKeyDebug(event, phase: "keyDown option-delete")
-            sendText(escapeSequence)
+            sendOptionDelete(keyCode: event.keyCode, on: surface)
             return
         }
 
@@ -998,11 +995,8 @@ private final class LineyGhosttySurfaceView: NSView {
         }
         guard let surface else { return false }
 
-        if let escapeSequence = lineyGhosttyOptionDeleteEscapeSequence(
-            keyCode: event.keyCode,
-            modifierFlags: event.modifierFlags
-        ) {
-            sendText(escapeSequence)
+        if lineyGhosttyOptionDeleteEscapeSequence(keyCode: event.keyCode, modifierFlags: event.modifierFlags) != nil {
+            sendOptionDelete(keyCode: event.keyCode, on: surface)
             return true
         }
 
@@ -1130,13 +1124,17 @@ private final class LineyGhosttySurfaceView: NSView {
             if hasMarkedText() {
                 unmarkText()
             }
-            sendText("\u{1B}\u{7F}")
+            if let surface {
+                sendOptionDelete(keyCode: UInt16(kVK_Delete), on: surface)
+            }
         case .deleteWordForward:
             handledTextInputCommand = true
             if hasMarkedText() {
                 unmarkText()
             }
-            sendText("\u{1B}[3;3~")
+            if let surface {
+                sendOptionDelete(keyCode: UInt16(kVK_ForwardDelete), on: surface)
+            }
         case .deleteBackwardInMarkedText:
             handledTextInputCommand = true
             deleteBackwardInMarkedText()
@@ -1429,6 +1427,28 @@ private final class LineyGhosttySurfaceView: NSView {
         default:
             sendText(sequence)
         }
+    }
+
+    private func sendOptionDelete(keyCode: UInt16, on surface: ghostty_surface_t) {
+        var press = ghostty_input_key_s()
+        press.action = GHOSTTY_ACTION_PRESS
+        press.mods = GHOSTTY_MODS_ALT
+        press.consumed_mods = GHOSTTY_MODS_NONE
+        press.keycode = UInt32(keyCode)
+        press.text = nil
+        press.unshifted_codepoint = keyCode == UInt16(kVK_Delete) ? 0x7F : 0
+        press.composing = false
+        _ = ghostty_surface_key(surface, press)
+
+        var release = ghostty_input_key_s()
+        release.action = GHOSTTY_ACTION_RELEASE
+        release.mods = GHOSTTY_MODS_ALT
+        release.consumed_mods = GHOSTTY_MODS_NONE
+        release.keycode = UInt32(keyCode)
+        release.text = nil
+        release.unshifted_codepoint = keyCode == UInt16(kVK_Delete) ? 0x7F : 0
+        release.composing = false
+        _ = ghostty_surface_key(surface, release)
     }
 
     private func sendSSHMetaLetter(_ character: Character, keyCode: UInt16, on surface: ghostty_surface_t) {
