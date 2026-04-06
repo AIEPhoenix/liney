@@ -2346,9 +2346,13 @@ final class WorkspaceStore: ObservableObject {
 
         case .toggleWorkspaceArchived(let id):
             if let workspace = workspace(for: id) {
+                let wasArchived = workspace.isArchived
                 workspace.isArchived.toggle()
                 if workspace.isArchived, selectedWorkspaceID == id, !appSettings.showArchivedWorkspaces {
                     selectedWorkspaceID = sidebarWorkspaces.first(where: { $0.id != id })?.id
+                }
+                if wasArchived, !workspace.isArchived {
+                    workspace.bootstrapIfNeeded()
                 }
                 persist()
             }
