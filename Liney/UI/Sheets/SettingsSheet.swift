@@ -293,6 +293,9 @@ enum LineyGhosttyThemeCatalog {
             ?? (NSHomeDirectory() + "/.config")
         directories.append(xdgConfig + "/ghostty/themes")
 
+        // macOS Application Support config location
+        directories.append(NSHomeDirectory() + "/Library/Application Support/com.mitchellh.ghostty/themes")
+
         // Ghostty.app bundled themes
         let ghosttyAppPaths = [
             "/Applications/Ghostty.app/Contents/Resources/ghostty/themes",
