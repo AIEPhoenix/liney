@@ -351,10 +351,8 @@ final class QuickCommandSupportTests: XCTestCase {
 
         LineyKeyboardShortcuts.resetShortcut(for: .closePane, in: &settings)
 
-        XCTAssertEqual(
-            LineyKeyboardShortcuts.effectiveShortcut(for: .closePane, in: settings),
-            StoredShortcut(key: "w", command: true, shift: false, option: true, control: false)
-        )
+        // closePane has no default shortcut (Cmd+W handles smart close via closeTab)
+        XCTAssertNil(LineyKeyboardShortcuts.effectiveShortcut(for: .closePane, in: settings))
     }
 
     func testNumberedTabShortcutNormalizesToDigitTemplate() {
@@ -423,7 +421,7 @@ final class QuickCommandSupportTests: XCTestCase {
         )
         XCTAssertEqual(
             LineyKeyboardShortcuts.effectiveShortcut(for: .togglePaneZoom, in: settings),
-            StoredShortcut(key: "\r", command: true, shift: false, option: false, control: false)
+            StoredShortcut(key: "\r", command: true, shift: true, option: false, control: false)
         )
         XCTAssertEqual(
             LineyKeyboardShortcuts.effectiveShortcut(for: .openDiff, in: settings),
@@ -534,14 +532,14 @@ final class QuickCommandSupportTests: XCTestCase {
         )
     }
 
-    func testShortcutMatchingSupportsCommandReturn() {
+    func testShortcutMatchingSupportsCommandShiftReturn() {
         let settings = AppSettings()
 
         let event = try! XCTUnwrap(
             NSEvent.keyEvent(
                 with: .keyDown,
                 location: .zero,
-                modifierFlags: [.command],
+                modifierFlags: [.command, .shift],
                 timestamp: 1,
                 windowNumber: 0,
                 context: nil,

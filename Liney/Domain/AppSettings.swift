@@ -324,6 +324,7 @@ struct AppSettings: Codable, Hashable {
     var uiScale: Double
     var terminalFontFamily: String?
     var terminalFontSize: Double?
+    var terminalTheme: String?
     var terminalScrollbackLines: Int?
     var sidebarShowsSecondaryLabels: Bool
     var sidebarShowsWorkspaceBadges: Bool
@@ -369,6 +370,7 @@ struct AppSettings: Codable, Hashable {
         uiScale: Double = 1,
         terminalFontFamily: String? = nil,
         terminalFontSize: Double? = nil,
+        terminalTheme: String? = nil,
         terminalScrollbackLines: Int? = nil,
         sidebarShowsSecondaryLabels: Bool = true,
         sidebarShowsWorkspaceBadges: Bool = true,
@@ -419,6 +421,9 @@ struct AppSettings: Codable, Hashable {
             .trimmingCharacters(in: .whitespacesAndNewlines)
             .nilIfEmpty
         self.terminalFontSize = terminalFontSize.map { min(max($0, 8), 32) }
+        self.terminalTheme = terminalTheme?
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+            .nilIfEmpty
         self.terminalScrollbackLines = terminalScrollbackLines.map { min(max($0, 1000), 1_000_000) }
         self.sidebarShowsSecondaryLabels = sidebarShowsSecondaryLabels
         self.sidebarShowsWorkspaceBadges = sidebarShowsWorkspaceBadges
@@ -484,6 +489,7 @@ extension AppSettings {
         case uiScale
         case terminalFontFamily
         case terminalFontSize
+        case terminalTheme
         case terminalScrollbackLines
         case sidebarShowsSecondaryLabels
         case sidebarShowsWorkspaceBadges
@@ -540,6 +546,7 @@ extension AppSettings {
             uiScale: try container.decodeIfPresent(Double.self, forKey: .uiScale) ?? 1,
             terminalFontFamily: try container.decodeIfPresent(String.self, forKey: .terminalFontFamily),
             terminalFontSize: try container.decodeIfPresent(Double.self, forKey: .terminalFontSize),
+            terminalTheme: try container.decodeIfPresent(String.self, forKey: .terminalTheme),
             terminalScrollbackLines: try container.decodeIfPresent(Int.self, forKey: .terminalScrollbackLines),
             sidebarShowsSecondaryLabels: try container.decodeIfPresent(Bool.self, forKey: .sidebarShowsSecondaryLabels) ?? true,
             sidebarShowsWorkspaceBadges: try container.decodeIfPresent(Bool.self, forKey: .sidebarShowsWorkspaceBadges) ?? true,
@@ -1148,9 +1155,9 @@ enum LineyShortcutAction: String, CaseIterable, Hashable, Identifiable {
         case .duplicatePane:
             return StoredShortcut(key: "d", command: true, shift: false, option: true, control: false)
         case .togglePaneZoom:
-            return StoredShortcut(key: "\r", command: true, shift: false, option: false, control: false)
+            return StoredShortcut(key: "\r", command: true, shift: true, option: false, control: false)
         case .closePane:
-            return StoredShortcut(key: "w", command: true, shift: false, option: true, control: false)
+            return nil
         case .minimizeWindow:
             return StoredShortcut(key: "m", command: true, shift: false, option: false, control: false)
         case .closeWindow:

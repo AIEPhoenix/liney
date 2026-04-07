@@ -257,6 +257,7 @@ final class WorkspaceModel: ObservableObject, Identifiable {
 
     func bootstrapIfNeeded() {
         ensureActiveWorktreeState()
+        guard !isArchived else { return }
         loadActiveWorktreeState()
     }
 
@@ -772,7 +773,9 @@ final class WorkspaceModel: ObservableObject, Identifiable {
             let initialPane = controller.createPane(defaultWorkingDirectory: activeWorktreePath)
             layout = .pane(PaneLeaf(paneID: initialPane))
         }
-        controller.sync(with: paneOrder, defaultWorkingDirectory: activeWorktreePath)
+        if !isArchived {
+            controller.sync(with: paneOrder, defaultWorkingDirectory: activeWorktreePath)
+        }
         wireWorkspaceActions()
         saveActiveWorktreeState()
     }
@@ -872,6 +875,21 @@ final class WorkspaceModel: ObservableObject, Identifiable {
             toggleZoom(on: paneID)
         case .closePane:
             closePane(paneID)
+        case .desktopNotification(let title):
+            let item = IslandNotificationItem(
+                id: UUID(),
+                workspaceID: id,
+                worktreePath: activeWorktreePath,
+                title: title,
+                agentName: nil,
+                terminalTag: nil,
+                status: .running,
+                startedAt: Date(),
+                body: nil,
+                prompt: nil
+            )
+            IslandNotificationState.shared.post(item: item)
+            IslandPanelController.shared.show()
         }
     }
 }

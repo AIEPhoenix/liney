@@ -253,6 +253,47 @@ public final class LineyDesktopApplication: NSObject {
         store.closePane(in: workspace, paneID: paneID)
     }
 
+    /// Smart close: close focused pane if multiple panes exist, otherwise close the tab.
+    func closeFocusedPaneOrTab() {
+        guard let store = activeStore,
+              let workspace = store.selectedWorkspace else { return }
+        if workspace.paneOrder.count > 1,
+           let paneID = workspace.sessionController.focusedPaneID {
+            store.closePane(in: workspace, paneID: paneID)
+        } else if workspace.tabs.count > 1,
+                  let tabID = workspace.activeTabID {
+            store.closeTab(in: workspace, tabID: tabID)
+        }
+    }
+
+    func findInFocusedPane() {
+        guard let workspace = activeStore?.selectedWorkspace,
+              let paneID = workspace.sessionController.focusedPaneID,
+              let session = workspace.sessionController.session(for: paneID) else { return }
+        session.beginSearch()
+    }
+
+    func findNextInFocusedPane() {
+        guard let workspace = activeStore?.selectedWorkspace,
+              let paneID = workspace.sessionController.focusedPaneID,
+              let session = workspace.sessionController.session(for: paneID) else { return }
+        session.searchNext()
+    }
+
+    func findPreviousInFocusedPane() {
+        guard let workspace = activeStore?.selectedWorkspace,
+              let paneID = workspace.sessionController.focusedPaneID,
+              let session = workspace.sessionController.session(for: paneID) else { return }
+        session.searchPrevious()
+    }
+
+    func hideFindInFocusedPane() {
+        guard let workspace = activeStore?.selectedWorkspace,
+              let paneID = workspace.sessionController.focusedPaneID,
+              let session = workspace.sessionController.session(for: paneID) else { return }
+        session.endSearch()
+    }
+
     func refreshSelectedWorkspace() {
         activeStore?.refreshSelectedWorkspace()
     }
@@ -306,6 +347,11 @@ public final class LineyDesktopApplication: NSObject {
     var canCloseSelectedTab: Bool {
         guard let workspace = activeStore?.selectedWorkspace else { return false }
         return workspace.tabs.count > 1 && workspace.activeTabID != nil
+    }
+
+    var canCloseFocusedPaneOrTab: Bool {
+        guard let workspace = activeStore?.selectedWorkspace else { return false }
+        return workspace.paneOrder.count > 1 || (workspace.tabs.count > 1 && workspace.activeTabID != nil)
     }
 
     var hasFocusedPane: Bool {

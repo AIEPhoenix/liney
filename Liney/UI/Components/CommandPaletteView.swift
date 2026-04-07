@@ -224,7 +224,8 @@ private struct CommandPaletteEventMonitor: NSViewRepresentable {
                     return nil
                 case 36, 76:
                     // Don't intercept Return key when IME is composing text
-                    if event.modifierFlags.contains(.imes) {
+                    if let fieldEditor = event.window?.firstResponder as? NSTextView,
+                       fieldEditor.hasMarkedText() {
                         return event
                     }
                     self.store.activateSelectedCommandPaletteItem()
