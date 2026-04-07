@@ -286,11 +286,6 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuItemValidation {
         NSApp.sendAction(selector, to: nil, from: sender)
     }
 
-    private func textFinderMenuItem(for action: NSTextFinder.Action) -> NSMenuItem {
-        let item = NSMenuItem(title: "", action: nil, keyEquivalent: "")
-        item.tag = action.rawValue
-        return item
-    }
 
     @MainActor
     func shouldDispatchGhosttySplitAction(_ direction: ghostty_action_split_direction_e) -> Bool {
@@ -336,14 +331,8 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuItemValidation {
                 return canPerformResponderAction(#selector(NSText.paste(_:)), sender: menuItem)
             case .selectAll:
                 return canPerformResponderAction(#selector(NSText.selectAll(_:)), sender: menuItem)
-            case .find:
-                return canPerformResponderAction(#selector(NSResponder.performTextFinderAction(_:)), sender: textFinderMenuItem(for: .showFindInterface))
-            case .findNext:
-                return canPerformResponderAction(#selector(NSResponder.performTextFinderAction(_:)), sender: textFinderMenuItem(for: .nextMatch))
-            case .findPrevious:
-                return canPerformResponderAction(#selector(NSResponder.performTextFinderAction(_:)), sender: textFinderMenuItem(for: .previousMatch))
-            case .hideFind:
-                return canPerformResponderAction(#selector(NSResponder.performTextFinderAction(_:)), sender: textFinderMenuItem(for: .hideFindInterface))
+            case .find, .findNext, .findPrevious, .hideFind:
+                return desktopApplication.hasFocusedPane
             case .refreshSelectedWorkspace:
                 return desktopApplication.selectedWorkspaceSupportsRepositoryFeatures
             case .refreshAllRepositories:
@@ -351,7 +340,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuItemValidation {
             case .newTab:
                 return desktopApplication.hasSelectedWorkspace
             case .closeTab:
-                return desktopApplication.canCloseSelectedTab
+                return desktopApplication.canCloseFocusedPaneOrTab
             case .nextTab, .previousTab:
                 return desktopApplication.selectedWorkspaceTabCount > 1
             case .selectTabByNumber:
@@ -416,16 +405,16 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuItemValidation {
             dispatchResponderAction(#selector(NSText.selectAll(_:)), sender: nil)
 
         case .find:
-            dispatchResponderAction(#selector(NSResponder.performTextFinderAction(_:)), sender: textFinderMenuItem(for: .showFindInterface))
+            desktopApplication?.findInFocusedPane()
 
         case .findNext:
-            dispatchResponderAction(#selector(NSResponder.performTextFinderAction(_:)), sender: textFinderMenuItem(for: .nextMatch))
+            desktopApplication?.findNextInFocusedPane()
 
         case .findPrevious:
-            dispatchResponderAction(#selector(NSResponder.performTextFinderAction(_:)), sender: textFinderMenuItem(for: .previousMatch))
+            desktopApplication?.findPreviousInFocusedPane()
 
         case .hideFind:
-            dispatchResponderAction(#selector(NSResponder.performTextFinderAction(_:)), sender: textFinderMenuItem(for: .hideFindInterface))
+            desktopApplication?.hideFindInFocusedPane()
 
         case .toggleCommandPalette:
             desktopApplication?.toggleCommandPalette()
@@ -452,7 +441,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuItemValidation {
             desktopApplication?.createTabInSelectedWorkspace()
 
         case .closeTab:
-            desktopApplication?.closeSelectedTab()
+            desktopApplication?.closeFocusedPaneOrTab()
 
         case .nextTab:
             desktopApplication?.selectNextTab()

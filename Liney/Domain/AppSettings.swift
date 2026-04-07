@@ -1150,9 +1150,9 @@ enum LineyShortcutAction: String, CaseIterable, Hashable, Identifiable {
         case .duplicatePane:
             return StoredShortcut(key: "d", command: true, shift: false, option: true, control: false)
         case .togglePaneZoom:
-            return StoredShortcut(key: "\r", command: true, shift: false, option: false, control: false)
+            return StoredShortcut(key: "\r", command: true, shift: true, option: false, control: false)
         case .closePane:
-            return StoredShortcut(key: "w", command: true, shift: false, option: true, control: false)
+            return nil
         case .minimizeWindow:
             return StoredShortcut(key: "m", command: true, shift: false, option: false, control: false)
         case .closeWindow:
