@@ -276,7 +276,10 @@ struct TerminalPaneView: View {
         isSearchPresented = false
         session.endSearch()
         searchFieldFocused = false
-        session.focus()
+        Task { @MainActor in
+            await Task.yield()
+            session.focus()
+        }
     }
 
     private func syncSearchState(with query: String?) {
