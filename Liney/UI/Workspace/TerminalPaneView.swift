@@ -169,6 +169,9 @@ struct TerminalPaneView: View {
         .onChange(of: session.surfaceStatus.searchQuery) { _, newValue in
             syncSearchState(with: newValue)
         }
+        .onChange(of: session.searchFocusRequestCount) { _, _ in
+            presentSearch()
+        }
         .onChange(of: session.lifecycle) { _, _ in
             scheduleAutoCloseIfNeeded()
         }
@@ -273,6 +276,7 @@ struct TerminalPaneView: View {
         isSearchPresented = false
         session.endSearch()
         searchFieldFocused = false
+        session.focus()
     }
 
     private func syncSearchState(with query: String?) {

@@ -1250,7 +1250,7 @@ private final class WorkspaceSidebarCoordinator: NSObject, NSOutlineViewDataSour
             }
 
             // Workspace drag
-            if let node = item as? SidebarNodeItem, (node.isGroupNode || node.isArchiveGroupNode) {
+            if let node = item as? SidebarNodeItem, node.isGroupNode {
                 return .move
             }
             if item == nil { return .move }
@@ -1309,12 +1309,6 @@ private final class WorkspaceSidebarCoordinator: NSObject, NSOutlineViewDataSour
                 .compactMap { UUID(uuidString: String($0)) }
             guard !ids.isEmpty else { return false }
 
-            if let node = item as? SidebarNodeItem, node.isArchiveGroupNode {
-                store?.setWorkspacesArchived(ids, archived: true)
-                reloadAfterDrop()
-                return true
-            }
-
             if let node = item as? SidebarNodeItem, let group = node.groupModel {
                 // Unarchive if needed before moving into a group
                 store?.setWorkspacesArchived(ids, archived: false)
@@ -1324,10 +1318,10 @@ private final class WorkspaceSidebarCoordinator: NSObject, NSOutlineViewDataSour
             }
 
             // Moving workspace(s) to root level — unarchive if needed
-            store?.setWorkspacesArchived(ids, archived: false)
-            store?.removeWorkspacesFromAllGroups(ids: ids)
             let rootOrder = store?.effectiveSidebarRootOrder() ?? []
             let targetIndex = index == -1 ? rootOrder.count : index
+            store?.setWorkspacesArchived(ids, archived: false)
+            store?.removeWorkspacesFromAllGroups(ids: ids)
             store?.moveSidebarRootItems(ids.map { .workspace($0) }, toIndex: targetIndex)
             reloadAfterDrop()
             return true
@@ -1554,6 +1548,15 @@ private final class SidebarOutlineView: NSOutlineView {
         let point = convert(event.locationInWindow, from: nil)
         let row = row(at: point)
         return menuProvider?(row)
+    }
+
+    override func canDragRows(with rowIndexes: IndexSet, at mouseDownPoint: NSPoint) -> Bool {
+        for row in rowIndexes {
+            if let node = item(atRow: row) as? SidebarNodeItem, node.isArchiveGroupNode {
+                return false
+            }
+        }
+        return super.canDragRows(with: rowIndexes, at: mouseDownPoint)
     }
 
     override func keyDown(with event: NSEvent) {

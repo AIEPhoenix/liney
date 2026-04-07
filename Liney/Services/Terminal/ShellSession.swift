@@ -85,6 +85,7 @@ final class ShellSession: ObservableObject, Identifiable {
     @Published var rows: Int = 24
     @Published var cols: Int = 80
     @Published var surfaceStatus = TerminalSurfaceStatusSnapshot()
+    @Published var searchFocusRequestCount: Int = 0
 
     var onWorkspaceAction: ((TerminalWorkspaceAction) -> Void)?
     var onFocus: (() -> Void)?
@@ -278,6 +279,7 @@ final class ShellSession: ObservableObject, Identifiable {
         let initialText = surfaceController.selectedText()
             ?? surfaceStatus.searchQuery
         surfaceController.beginSearch(initialText: initialText)
+        searchFocusRequestCount += 1
     }
 
     func updateSearch(_ text: String) {
