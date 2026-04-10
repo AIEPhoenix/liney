@@ -20,6 +20,9 @@ struct TerminalHostView: NSViewRepresentable {
 
     func updateNSView(_ nsView: TerminalViewContainer, context: Context) {
         nsView.attach(session.nsView, restoreFocus: shouldRestoreFocus)
+        if session.lifecycle != .idle {
+            session.nsView.needsDisplay = true
+        }
     }
 }
 
