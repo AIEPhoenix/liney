@@ -777,6 +777,12 @@ private final class WorkspaceSidebarCoordinator: NSObject, NSOutlineViewDataSour
                 action: #selector(customizeWorktreeIcon(_:)),
                 representedObject: actionPayload
             )
+            addMenuItem(
+                to: menu,
+                title: localized("sidebar.menu.editWorktreeNote"),
+                action: #selector(editWorktreeNote(_:)),
+                representedObject: actionPayload
+            )
 
             if workspace.supportsRepositoryFeatures, !worktree.isMainWorktree {
                 menu.addItem(.separator())
@@ -929,6 +935,13 @@ private final class WorkspaceSidebarCoordinator: NSObject, NSOutlineViewDataSour
                   let workspace = store?.workspaces.first(where: { $0.id == payload.workspaceID }),
                   let worktree = workspace.worktrees.first(where: { $0.path == payload.worktreePath }) else { return }
             store?.presentSidebarIconCustomization(for: worktree, in: workspace)
+        }
+
+        @objc private func editWorktreeNote(_ sender: NSMenuItem) {
+            guard let payload = sender.representedObject as? SidebarActionWorktree,
+                  let workspace = store?.workspaces.first(where: { $0.id == payload.workspaceID }),
+                  let worktree = workspace.worktrees.first(where: { $0.path == payload.worktreePath }) else { return }
+            store?.presentEditWorktreeNote(for: worktree, in: workspace)
         }
 
         @objc private func removeWorktree(_ sender: NSMenuItem) {
@@ -1864,6 +1877,10 @@ private struct WorktreeRowContent: View {
         store?.sidebarIcon(for: worktree, in: workspace) ?? .worktreeDefault
     }
 
+    private var worktreeNote: String? {
+        store?.worktreeNote(for: worktree, in: workspace)
+    }
+
     private var uiScale: CGFloat {
         CGFloat(appSettings.uiScale)
     }
@@ -1900,6 +1917,11 @@ private struct WorktreeRowContent: View {
                     .font(.system(size: 8 * uiScale))
                     .foregroundStyle(LineyTheme.mutedText)
             }
+            if worktreeNote != nil {
+                Image(systemName: "note.text")
+                    .font(.system(size: 8 * uiScale))
+                    .foregroundStyle(LineyTheme.mutedText)
+            }
             Spacer()
             if appSettings.sidebarShowsWorktreeBadges {
                 HStack(spacing: 5 * uiScale) {
@@ -1925,6 +1947,7 @@ private struct WorktreeRowContent: View {
         .onHover { isInside in
             isHovering = isInside
         }
+        .help(worktreeNote ?? "")
     }
 }
 
