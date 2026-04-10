@@ -164,6 +164,7 @@ struct TerminalPaneView: View {
         }
         .onAppear {
             session.startIfNeeded()
+            sessionController.hasBeenDisplayed = true
             syncSearchState(with: session.surfaceStatus.searchQuery)
             scheduleAutoCloseIfNeeded()
         }
